@@ -165,6 +165,11 @@ function App() {
             language={language}
             onChange={handleCodeChange}
             onValidate={setHasErrors}
+            onRun={() => {
+              if (!isRunning && !hasErrors) {
+                handleRun();
+              }
+            }}
           />
         </div>
         <div className="w-1/2">
