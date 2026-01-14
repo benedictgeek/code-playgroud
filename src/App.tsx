@@ -33,6 +33,7 @@ function App() {
   const [code, setCode] = useState(DEFAULT_JS_CODE);
   const [output, setOutput] = useState<OutputItem[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [hasErrors, setHasErrors] = useState(false);
   const workerRef = useRef<Worker | null>(null);
 
   // Store code for each language separately
@@ -140,6 +141,7 @@ function App() {
         onRun={handleRun}
         onClear={handleClear}
         isRunning={isRunning}
+        hasErrors={hasErrors}
       />
       <div className="flex-1 flex overflow-hidden">
         <div className="w-1/2 border-r border-[#3c3c3c]">
@@ -147,6 +149,7 @@ function App() {
             code={code}
             language={language}
             onChange={handleCodeChange}
+            onValidate={setHasErrors}
           />
         </div>
         <div className="w-1/2">

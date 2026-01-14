@@ -6,6 +6,7 @@ interface HeaderProps {
   onRun: () => void;
   onClear: () => void;
   isRunning: boolean;
+  hasErrors: boolean;
 }
 
 export default function Header({
@@ -14,7 +15,9 @@ export default function Header({
   onRun,
   onClear,
   isRunning,
+  hasErrors,
 }: HeaderProps) {
+  const isDisabled = isRunning || hasErrors;
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-[#252526] border-b border-[#3c3c3c]">
       <div className="flex items-center gap-4">
@@ -37,9 +40,9 @@ export default function Header({
         </button>
         <button
           onClick={onRun}
-          disabled={isRunning}
+          disabled={isDisabled}
           className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-            isRunning
+            isDisabled
               ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
               : 'bg-[#0e639c] text-white hover:bg-[#1177bb]'
           }`}
