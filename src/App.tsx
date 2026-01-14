@@ -133,6 +133,21 @@ function App() {
     setOutput([]);
   }, []);
 
+  // Keyboard shortcut: Cmd+Enter (Mac) or Ctrl+Enter (Windows)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (!isRunning && !hasErrors) {
+          handleRun();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleRun, isRunning, hasErrors]);
+
   return (
     <div className="h-screen flex flex-col">
       <Header
