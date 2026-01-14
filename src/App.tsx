@@ -13,9 +13,6 @@ console.log("Hello, World!");
 // Try some calculations
 const sum = (a, b) => a + b;
 console.log("2 + 3 =", sum(2, 3));
-
-// Return a value to see it in the output
-"Ready to code!";
 `;
 
 const DEFAULT_TS_CODE = `// Welcome to Code Playground!
@@ -29,9 +26,6 @@ const greet = (name: string): string => {
 };
 
 console.log(greet("Developer"));
-
-// Return a value to see it in the output
-"TypeScript is awesome!";
 `;
 
 function App() {

@@ -16,8 +16,6 @@ const sendMessage = (response: WorkerResponse) => {
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   const { code, id } = event.data;
 
-  const logs: string[] = [];
-
   // Create a custom console that captures logs
   const customConsole = {
     log: (...args: unknown[]) => {

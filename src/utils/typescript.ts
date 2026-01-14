@@ -9,7 +9,7 @@ export interface CompilationResult {
 export async function compileTypeScript(code: string): Promise<CompilationResult> {
   try {
     // Get the TypeScript worker from Monaco
-    const worker = await monaco.languages.typescript.getTypeScriptWorker();
+    const worker = await monaco.typescript.getTypeScriptWorker();
 
     // Create a temporary model to compile
     const uri = monaco.Uri.parse('file:///main.ts');
