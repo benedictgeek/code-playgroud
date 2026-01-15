@@ -1,7 +1,7 @@
 import MonacoEditor, { type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { useRef, useEffect } from 'react';
-import type { Language } from '../types';
+import type { Language, EditorSettings } from '../types';
 
 interface EditorProps {
   code: string;
@@ -9,9 +9,16 @@ interface EditorProps {
   onChange: (value: string | undefined) => void;
   onValidate?: (hasErrors: boolean) => void;
   onRun?: () => void;
+  settings?: EditorSettings;
 }
 
-export default function Editor({ code, language, onChange, onValidate, onRun }: EditorProps) {
+const DEFAULT_SETTINGS: EditorSettings = {
+  fontSize: 14,
+  wordWrap: true,
+  tabSize: 2,
+};
+
+export default function Editor({ code, language, onChange, onValidate, onRun, settings = DEFAULT_SETTINGS }: EditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const onRunRef = useRef(onRun);
 
@@ -51,12 +58,12 @@ export default function Editor({ code, language, onChange, onValidate, onRun }: 
         onMount={handleEditorMount}
         options={{
           minimap: { enabled: false },
-          fontSize: 14,
+          fontSize: settings.fontSize,
           lineNumbers: 'on',
           scrollBeyondLastLine: false,
           automaticLayout: true,
-          tabSize: 2,
-          wordWrap: 'on',
+          tabSize: settings.tabSize,
+          wordWrap: settings.wordWrap ? 'on' : 'off',
           padding: { top: 16 },
         }}
       />

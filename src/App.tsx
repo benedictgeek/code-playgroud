@@ -2,8 +2,16 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import Editor from './components/Editor';
 import Output from './components/Output';
 import Header from './components/Header';
+import Sidebar from './components/Sidebar/Sidebar';
 import { compileTypeScript } from './utils/typescript';
-import type { Language, OutputItem } from './types';
+import {
+  getHistory,
+  saveToHistory,
+  deleteHistoryItem,
+  getSettings,
+  saveSettings,
+} from './utils/storage';
+import type { Language, OutputItem, HistoryItem, EditorSettings } from './types';
 
 const DEFAULT_JS_CODE = `// Welcome to Code Playground!
 // Write your JavaScript code here
@@ -35,6 +43,10 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [hasErrors, setHasErrors] = useState(false);
   const workerRef = useRef<Worker | null>(null);
+
+  // Sidebar state
+  const [history, setHistory] = useState<HistoryItem[]>(() => getHistory());
+  const [settings, setSettings] = useState<EditorSettings>(() => getSettings());
 
   // Store code for each language separately
   const codeStorageRef = useRef<Record<Language, string>>({
@@ -73,6 +85,10 @@ function App() {
 
     setIsRunning(true);
     setOutput([]);
+
+    // Save to history
+    const historyItem = saveToHistory({ code, language });
+    setHistory(prev => [historyItem, ...prev].slice(0, 50));
 
     let codeToRun = code;
 
@@ -133,6 +149,24 @@ function App() {
     setOutput([]);
   }, []);
 
+  // History handlers
+  const handleHistorySelect = useCallback((item: HistoryItem) => {
+    setCode(item.code);
+    setLanguage(item.language);
+    codeStorageRef.current[item.language] = item.code;
+  }, []);
+
+  const handleHistoryDelete = useCallback((id: string) => {
+    deleteHistoryItem(id);
+    setHistory(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  // Settings handlers
+  const handleSettingsChange = useCallback((newSettings: EditorSettings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  }, []);
+
   // Keyboard shortcut: Cmd+Enter (Mac) or Ctrl+Enter (Windows)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -159,7 +193,14 @@ function App() {
         hasErrors={hasErrors}
       />
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-1/2 border-r border-[#3c3c3c]">
+        <Sidebar
+          history={history}
+          onHistorySelect={handleHistorySelect}
+          onHistoryDelete={handleHistoryDelete}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+        />
+        <div className="flex-1 border-r border-[#3c3c3c]">
           <Editor
             code={code}
             language={language}
@@ -170,9 +211,10 @@ function App() {
                 handleRun();
               }
             }}
+            settings={settings}
           />
         </div>
-        <div className="w-1/2">
+        <div className="flex-1">
           <Output items={output} isRunning={isRunning} />
         </div>
       </div>

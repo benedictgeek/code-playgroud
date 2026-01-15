@@ -5,3 +5,16 @@ export interface OutputItem {
   content: string;
   timestamp?: number;
 }
+
+export interface HistoryItem {
+  id: string;
+  code: string;
+  language: Language;
+  timestamp: number;
+}
+
+export interface EditorSettings {
+  fontSize: number;
+  wordWrap: boolean;
+  tabSize: number;
+}
