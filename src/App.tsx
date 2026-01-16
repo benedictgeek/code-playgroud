@@ -48,6 +48,11 @@ function App() {
   const [history, setHistory] = useState<DayHistory[]>(() => getHistory());
   const [settings, setSettings] = useState<EditorSettings>(() => getSettings());
 
+  // Resizable panel state
+  const [editorWidth, setEditorWidth] = useState(50); // percentage
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Store code for each language separately
   const codeStorageRef = useRef<Record<Language, string>>({
     javascript: DEFAULT_JS_CODE,
@@ -196,6 +201,39 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleRun, isRunning, hasErrors]);
 
+  // Resizable panel handlers
+  const handleMouseDown = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !containerRef.current) return;
+
+      const container = containerRef.current;
+      const rect = container.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const newWidth = (offsetX / rect.width) * 100;
+
+      // Clamp between 20% and 80%
+      setEditorWidth(Math.min(80, Math.max(20, newWidth)));
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
   return (
     <div className="h-screen flex flex-col">
       <Header
@@ -214,22 +252,31 @@ function App() {
           settings={settings}
           onSettingsChange={handleSettingsChange}
         />
-        <div className="flex-1 border-r border-[#3c3c3c]">
-          <Editor
-            code={code}
-            language={language}
-            onChange={handleCodeChange}
-            onValidate={setHasErrors}
-            onRun={() => {
-              if (!isRunning && !hasErrors) {
-                handleRun();
-              }
-            }}
-            settings={settings}
+        <div ref={containerRef} className={`flex-1 flex overflow-hidden ${isDragging ? 'select-none' : ''}`}>
+          <div style={{ width: `${editorWidth}%` }} className="h-full">
+            <Editor
+              code={code}
+              language={language}
+              onChange={handleCodeChange}
+              onValidate={setHasErrors}
+              onRun={() => {
+                if (!isRunning && !hasErrors) {
+                  handleRun();
+                }
+              }}
+              settings={settings}
+            />
+          </div>
+          {/* Resizable divider */}
+          <div
+            onMouseDown={handleMouseDown}
+            className={`w-1 cursor-col-resize bg-[#3c3c3c] hover:bg-[#0e639c] transition-colors ${
+              isDragging ? 'bg-[#0e639c]' : ''
+            }`}
           />
-        </div>
-        <div className="flex-1">
-          <Output items={output} isRunning={isRunning} />
+          <div style={{ width: `${100 - editorWidth}%` }} className="h-full">
+            <Output items={output} isRunning={isRunning} />
+          </div>
         </div>
       </div>
     </div>
