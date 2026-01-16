@@ -1,41 +1,76 @@
-import type { HistoryItem, EditorSettings } from '../types';
+import type { DayHistory, HistoryEntry, EditorSettings, Language } from '../types';
 
 const STORAGE_KEYS = {
   HISTORY: 'code-playground-history',
   SETTINGS: 'code-playground-settings',
 } as const;
 
-const MAX_HISTORY_ITEMS = 50;
+const MAX_DAYS = 5;
+
+// Get today's date in YYYY-MM-DD format
+function getDateString(date: Date = new Date()): string {
+  return date.toISOString().split('T')[0];
+}
 
 // History functions
-export function getHistory(): HistoryItem[] {
+export function getHistory(): DayHistory[] {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
-    return data ? JSON.parse(data) : [];
+    const history: DayHistory[] = data ? JSON.parse(data) : [];
+
+    // Filter out entries older than MAX_DAYS
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - MAX_DAYS);
+    const cutoffString = getDateString(cutoffDate);
+
+    return history.filter(day => day.date >= cutoffString);
   } catch {
     return [];
   }
 }
 
-export function saveToHistory(item: Omit<HistoryItem, 'id' | 'timestamp'>): HistoryItem {
+export function saveToHistory(code: string, language: Language): DayHistory[] {
   const history = getHistory();
-  const newItem: HistoryItem = {
-    ...item,
-    id: crypto.randomUUID(),
+  const today = getDateString();
+
+  // Find or create today's entry
+  let todayHistory = history.find(day => day.date === today);
+
+  if (!todayHistory) {
+    todayHistory = { date: today, entries: [] };
+    history.unshift(todayHistory);
+  }
+
+  // Find existing entry for this language or create new one
+  const existingEntryIndex = todayHistory.entries.findIndex(e => e.language === language);
+  const newEntry: HistoryEntry = {
+    code,
+    language,
     timestamp: Date.now(),
   };
 
-  // Add to beginning and limit to max items
-  const updatedHistory = [newItem, ...history].slice(0, MAX_HISTORY_ITEMS);
-  localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(updatedHistory));
+  if (existingEntryIndex >= 0) {
+    todayHistory.entries[existingEntryIndex] = newEntry;
+  } else {
+    todayHistory.entries.push(newEntry);
+  }
 
-  return newItem;
+  // Sort history by date (newest first)
+  history.sort((a, b) => b.date.localeCompare(a.date));
+
+  // Keep only last MAX_DAYS
+  const trimmedHistory = history.slice(0, MAX_DAYS);
+
+  localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(trimmedHistory));
+
+  return trimmedHistory;
 }
 
-export function deleteHistoryItem(id: string): void {
+export function deleteHistoryDay(date: string): DayHistory[] {
   const history = getHistory();
-  const updatedHistory = history.filter(item => item.id !== id);
+  const updatedHistory = history.filter(day => day.date !== date);
   localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(updatedHistory));
+  return updatedHistory;
 }
 
 export function clearHistory(): void {

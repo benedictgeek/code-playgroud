@@ -7,11 +7,11 @@ import { compileTypeScript } from './utils/typescript';
 import {
   getHistory,
   saveToHistory,
-  deleteHistoryItem,
+  deleteHistoryDay,
   getSettings,
   saveSettings,
 } from './utils/storage';
-import type { Language, OutputItem, HistoryItem, EditorSettings } from './types';
+import type { Language, OutputItem, DayHistory, HistoryEntry, EditorSettings } from './types';
 
 const DEFAULT_JS_CODE = `// Welcome to Code Playground!
 // Write your JavaScript code here
@@ -45,7 +45,7 @@ function App() {
   const workerRef = useRef<Worker | null>(null);
 
   // Sidebar state
-  const [history, setHistory] = useState<HistoryItem[]>(() => getHistory());
+  const [history, setHistory] = useState<DayHistory[]>(() => getHistory());
   const [settings, setSettings] = useState<EditorSettings>(() => getSettings());
 
   // Store code for each language separately
@@ -53,6 +53,9 @@ function App() {
     javascript: DEFAULT_JS_CODE,
     typescript: DEFAULT_TS_CODE,
   });
+
+  // Debounce timer for auto-save
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Initialize worker
@@ -66,11 +69,26 @@ function App() {
     };
   }, []);
 
+  // Auto-save to history (debounced)
+  const autoSaveToHistory = useCallback((codeToSave: string, lang: Language) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      const updatedHistory = saveToHistory(codeToSave, lang);
+      setHistory(updatedHistory);
+    }, 1000); // Save after 1 second of inactivity
+  }, []);
+
   const handleCodeChange = useCallback((value: string | undefined) => {
     const newCode = value || '';
     setCode(newCode);
     codeStorageRef.current[language] = newCode;
-  }, [language]);
+
+    // Auto-save to history
+    autoSaveToHistory(newCode, language);
+  }, [language, autoSaveToHistory]);
 
   const handleLanguageChange = useCallback((newLang: Language) => {
     // Save current code
@@ -85,10 +103,6 @@ function App() {
 
     setIsRunning(true);
     setOutput([]);
-
-    // Save to history
-    const historyItem = saveToHistory({ code, language });
-    setHistory(prev => [historyItem, ...prev].slice(0, 50));
 
     let codeToRun = code;
 
@@ -150,15 +164,15 @@ function App() {
   }, []);
 
   // History handlers
-  const handleHistorySelect = useCallback((item: HistoryItem) => {
-    setCode(item.code);
-    setLanguage(item.language);
-    codeStorageRef.current[item.language] = item.code;
+  const handleHistorySelect = useCallback((entry: HistoryEntry) => {
+    setCode(entry.code);
+    setLanguage(entry.language);
+    codeStorageRef.current[entry.language] = entry.code;
   }, []);
 
-  const handleHistoryDelete = useCallback((id: string) => {
-    deleteHistoryItem(id);
-    setHistory(prev => prev.filter(item => item.id !== id));
+  const handleHistoryDeleteDay = useCallback((date: string) => {
+    const updatedHistory = deleteHistoryDay(date);
+    setHistory(updatedHistory);
   }, []);
 
   // Settings handlers
@@ -196,7 +210,7 @@ function App() {
         <Sidebar
           history={history}
           onHistorySelect={handleHistorySelect}
-          onHistoryDelete={handleHistoryDelete}
+          onHistoryDeleteDay={handleHistoryDeleteDay}
           settings={settings}
           onSettingsChange={handleSettingsChange}
         />

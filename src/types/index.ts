@@ -6,11 +6,15 @@ export interface OutputItem {
   timestamp?: number;
 }
 
-export interface HistoryItem {
-  id: string;
+export interface HistoryEntry {
   code: string;
   language: Language;
   timestamp: number;
+}
+
+export interface DayHistory {
+  date: string; // YYYY-MM-DD format
+  entries: HistoryEntry[];
 }
 
 export interface EditorSettings {
